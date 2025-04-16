@@ -5,14 +5,15 @@ comma-separated interests, optional photo), and page through every other member'
 liking and unliking as you go. Express + Prisma over PostgreSQL behind a React 19 SPA that
 does all of its data access through RTK Query.
 
-It was built as a take-home assessment, so the scope stays fixed to that brief — no extra
-product surface. The work that *is* here is correctness, layering, tests and documentation.
+The product surface is deliberately small: one profile per member and one feed. The effort
+goes into correctness, layering, tests and documentation rather than more screens.
 
 ## Try it without installing a database
 
 The API ships with a second storage driver that lives in process memory, pre-seeded with ten
 members. It runs the real routes, middleware, validation and services — only the repository
-implementation differs — and it is how the screenshots below were captured.
+implementation differs — and it is how the screenshots below were captured. You need
+Node 22 (see `.nvmrc`).
 
 ```bash
 # terminal 1 — API on :3001, in-memory, seeded
@@ -43,8 +44,10 @@ cp .env.example .env         # JWT_SECRET is mandatory — compose refuses to st
 docker compose up --build
 ```
 
-**These images have not been built or booted here.** `docker compose config` parses and
-resolves cleanly, and that is the extent of the verification.
+The stack has been built and booted from a clean checkout: all three containers reach
+`healthy`, the three migrations apply to an empty volume, and signup, profile save with a
+photo, the feed, idempotent likes and profile deletion all behave the same on PostgreSQL as
+on the in-memory driver.
 </details>
 
 ## What it looks like
@@ -55,8 +58,17 @@ resolves cleanly, and that is the extent of the verification.
 | Feed, top of page one | After "Load more" — end of the feed |
 | ![The profile editor with the demo member's name, headline, bio and interests filled in](docs/screenshots/profile-editor.png) | ![A modal dialog headed "Delete your profile?" with Cancel and "Yes, delete it" buttons](docs/screenshots/delete-confirmation.png) |
 | The profile editor | Deleting a profile |
+| ![The sign-in card with email and password fields and a Log in button](docs/screenshots/login.png) | |
+| Signing in | |
 
-All four are 1440×900, taken against the seeded demo API described above.
+And at phone width (390×844), where the cards and the editor reflow to a single column:
+
+| | |
+| --- | --- |
+| ![The feed on a narrow screen, one card per row](docs/screenshots/feed-mobile.png) | ![The profile editor on a narrow screen](docs/screenshots/profile-editor-mobile.png) |
+
+All of them were taken with Playwright against the seeded demo API described above. The
+members are fictional and have no photos, so every avatar is an initials tile.
 
 ## The data it keeps
 
@@ -151,6 +163,60 @@ Everything under `/api/profile` requires `Authorization: Bearer <token>`.
 | `DELETE` | `/api/profile/{id}/like` | Idempotent. Returns the authoritative count. |
 | `GET` | `/api/health` | No token. Reports the active data driver. |
 
+Captured from the demo server (the token is elided and the feed is trimmed to one card):
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{"email": "demo@sadaora.test", "password": "sadaora-demo-2025"}
+```
+
+```json
+{
+  "token": "<a signed JWT, valid for JWT_EXPIRES_IN>",
+  "user": { "id": "7ee08eff-c8c1-49d3-89ca-0256a799c00d", "email": "demo@sadaora.test" }
+}
+```
+
+```http
+GET /api/profile/feed?page=1&limit=2
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "cc4a2566-6259-46ea-833f-3b0702bb8a3e",
+      "name": "Grace Adeyemi",
+      "headline": "Engineering manager, developer experience",
+      "bio": "I look after the tools and the people who maintain them. …",
+      "photoUrl": null,
+      "interests": ["developer experience", "ci/cd", "coaching", "jazz piano"],
+      "createdAt": "2026-11-08T14:17:59.110Z",
+      "likeCount": 8,
+      "likedByCurrentUser": false
+    }
+  ],
+  "meta": { "page": 1, "limit": 2, "total": 9, "totalPages": 5, "hasMore": true }
+}
+```
+
+Liking twice gives the same answer both times, and unliking returns the count the server
+holds:
+
+```http
+POST /api/profile/cc4a2566-6259-46ea-833f-3b0702bb8a3e/like     -> {"liked":true,"likeCount":9}
+DELETE /api/profile/cc4a2566-6259-46ea-833f-3b0702bb8a3e/like   -> {"liked":false,"likeCount":8}
+```
+
+A profile save with an empty name:
+
+```json
+{ "error": { "code": "BAD_REQUEST", "message": "Validation failed", "details": { "name": "Name is required" } } }
+```
+
 Failures always come back as `{ error: { code, message, details? } }`. Anything the server
 does not recognise is collapsed to a generic `INTERNAL_ERROR` 500, so Prisma messages and
 file paths never reach a client. `401 INVALID_TOKEN` means the session is over and the SPA
@@ -213,7 +279,7 @@ cd frontend   # dev · test · test:coverage · lint · typecheck · build
 ```
 
 ```
-backend   Test Suites: 10 passed, 10 total     Tests:  73 passed, 73 total
+backend   Test Suites: 10 passed, 10 total     Tests:  75 passed, 75 total
 frontend  Test Files    7 passed (7)           Tests:  44 passed (44)
 ```
 
@@ -238,7 +304,11 @@ or in the Docker image. `BCRYPT_ROUNDS` is configurable.
 **Photo filenames are generated, never echoed.** The stored name is `photo-<uuid>` plus an
 extension looked up from the validated MIME type, so nothing a client sends becomes a path
 in the directory that `express.static` serves. Uploads are capped at 2 MB, one file, and
-restricted to JPEG, PNG, WebP and GIF.
+restricted to JPEG, PNG, WebP and GIF. Because multer writes the file before validation
+runs, a rejected save deletes the file it just stored.
+
+**Emails are trimmed and lower-cased, nothing more.** Gmail-style dot and `+tag` stripping
+would change the address a member typed and merge mailboxes that are really different.
 
 **The feed's page size is clamped** to `MAX_FEED_PAGE_SIZE`, because `limit` arrives from the
 query string, and the response carries real `total`, `totalPages` and `hasMore` so the client
@@ -247,16 +317,21 @@ never infers "there is more" from a page length. Its DTO exposes `likeCount` and
 not public data, and serialisation lives in one module so two endpoints cannot disagree about
 the shape of `photoUrl`.
 
-**The production bundle is 20.80 kB of app code (6.88 kB gzipped) plus a 293.90 kB vendor
-chunk (95.58 kB gzipped)**, split so an app change does not invalidate the cached vendor
+**The production bundle is 20.82 kB of app code (6.89 kB gzipped) plus a 345.35 kB vendor
+chunk (111.36 kB gzipped)**, split so an app change does not invalidate the cached vendor
 chunk. Measured with `npm run build`.
+
+**The look is warm paper and pine green**, with Fraunces for headings over Public Sans,
+loaded from Google Fonts with system fallbacks. Colours live as tokens in
+`frontend/src/index.css`, so components never hard-code a shade.
 
 ## Known gaps
 
 - **Photos are written to the API's local disk** and served by Express. That does not survive
   a redeploy and does not work behind more than one instance. Object storage behind the
   existing `photoUrl` field is the obvious next step — the DTO layer passes absolute URLs
-  through unchanged, so a CDN URL needs no code change.
+  through unchanged, so a CDN URL needs no code change. Replacing a photo or deleting a
+  profile also leaves the old file on disk.
 - **No refresh tokens.** One access token in `localStorage`, readable by any script on the
   origin. Short-lived access tokens plus an httpOnly refresh cookie is the production answer.
 - **Offset pagination** degrades on deep pages and can skip or repeat a row if profiles are
@@ -265,11 +340,16 @@ chunk. Measured with `npm run build`.
 - **No rate limiting on `/api/auth/login`** and no password reset flow.
 - **The feed is not searchable, filterable or ranked** — it is every other member, newest
   first.
-- **Nothing here has met a live PostgreSQL.** The Prisma driver's query shapes are asserted
-  against a mock — which catches "we stopped aggregating in SQL" but not "this is invalid
-  SQL" — and the index-and-cascade migration was checked by diffing it against Prisma's own
-  generated DDL (`prisma migrate diff --from-empty`) rather than by applying it. The suite is
-  driver-agnostic, so a CI job with a Postgres service container could close both gaps by
-  rerunning the integration tests under `DATA_DRIVER=prisma`.
+- **The automated tests never touch PostgreSQL.** The Prisma driver's query shapes are
+  asserted against a mock, which catches "we stopped aggregating in SQL" but not "this is
+  invalid SQL". The Compose stack has been exercised by hand against Postgres 16; rerunning
+  the integration suite under `DATA_DRIVER=prisma` against a throwaway database would make
+  that check repeatable.
+- **Major upgrades are pending**: Express 5, Prisma 7, ESLint 9 for the backend (the Airbnb
+  TypeScript config does not support it), and Vite 7+, Vitest 4+ and MSW 3 for the frontend.
 - **The in-memory driver is for tests and the demo only** — not durable, not shared between
   processes, and it sorts the feed in JavaScript.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
