@@ -5,8 +5,14 @@ import { asyncHandler } from '../lib/async-handler';
 import { validate } from '../middleware/validate';
 import { AuthService } from '../services/auth.service';
 
+// Only trim and lower-case. express-validator's normalizeEmail() also strips
+// dots and "+tag" suffixes from Gmail addresses, which silently changed the
+// stored email and merged distinct addresses into one account.
+const emailRule = () =>
+  body('email').trim().isEmail().withMessage('A valid email address is required').toLowerCase();
+
 const credentialRules = [
-  body('email').isEmail().withMessage('A valid email address is required').normalizeEmail(),
+  emailRule(),
   body('password')
     .isString()
     .isLength({ min: 8, max: 128 })
@@ -20,7 +26,7 @@ export function createAuthRouter(service: AuthService): Router {
   router.post('/signup', credentialRules, validate, asyncHandler(controller.signup));
   router.post(
     '/login',
-    [body('email').isEmail().withMessage('A valid email address is required').normalizeEmail(), body('password').isString().notEmpty()],
+    [emailRule(), body('password').isString().notEmpty()],
     validate,
     asyncHandler(controller.login)
   );

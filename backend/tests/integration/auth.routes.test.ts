@@ -41,6 +41,26 @@ describe('POST /api/auth/signup', () => {
       .expect(400);
   });
 
+  it('stores the address as typed apart from case and surrounding spaces', async () => {
+    const response = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: '  Mei.Tan+feed@Gmail.com ', password: 'correct horse battery' })
+      .expect(201);
+
+    expect(response.body.user.email).toBe('mei.tan+feed@gmail.com');
+
+    // Without the dot and the tag it is a different mailbox, so a new account.
+    await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'meitan@gmail.com', password: 'correct horse battery' })
+      .expect(201);
+
+    await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'MEI.TAN+feed@gmail.com', password: 'correct horse battery' })
+      .expect(200);
+  });
+
   it('returns 409 for a duplicate account', async () => {
     await request(app)
       .post('/api/auth/signup')
