@@ -6,17 +6,22 @@
  * colour decisions out of individual components.
  */
 @theme {
-  --color-canvas: oklch(98.4% 0.003 260);
-  --color-surface: oklch(100% 0 0);
-  --color-line: oklch(92.5% 0.005 260);
-  --color-ink: oklch(24% 0.02 265);
-  --color-ink-muted: oklch(52% 0.015 265);
-  --color-brand: oklch(53% 0.19 262);
-  --color-brand-strong: oklch(46% 0.2 262);
-  --color-brand-soft: oklch(96% 0.025 262);
-  --color-danger: oklch(55% 0.2 25);
-  --color-danger-soft: oklch(96% 0.03 25);
-  --color-heart: oklch(60% 0.21 18);
+  /* Warm paper, pine-green ink and a terracotta heart: a members' noticeboard
+     rather than a dashboard. */
+  --color-canvas: oklch(97.2% 0.012 85);
+  --color-surface: oklch(99.4% 0.005 85);
+  --color-line: oklch(89.5% 0.017 80);
+  --color-ink: oklch(25% 0.028 165);
+  --color-ink-muted: oklch(47% 0.022 160);
+  --color-brand: oklch(45% 0.085 165);
+  --color-brand-strong: oklch(37% 0.075 165);
+  --color-brand-soft: oklch(93.5% 0.03 160);
+  --color-danger: oklch(50% 0.19 28);
+  --color-danger-soft: oklch(95.5% 0.03 30);
+  --color-heart: oklch(58% 0.17 35);
+
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html {
@@ -26,13 +31,18 @@ html {
 body {
   margin: 0;
   color: var(--color-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 /* A single, consistent focus ring instead of the browser default in some
    places and nothing at all in others. */
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
 :where(a, button, input, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;

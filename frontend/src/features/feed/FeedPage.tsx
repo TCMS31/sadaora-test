@@ -96,7 +96,7 @@ function Layout({ children, total }: { children: React.ReactNode; total?: number
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Member feed</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-ink">Member feed</h1>
         <p className="mt-1 text-sm text-ink-muted">
           {total === undefined
             ? 'Public profiles from every other member.'

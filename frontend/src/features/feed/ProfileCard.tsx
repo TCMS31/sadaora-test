@@ -15,7 +15,7 @@ export function ProfileCard({ profile, onToggleLike, pending }: ProfileCardProps
       <div className="flex gap-4">
         <Avatar name={profile.name} photoUrl={profile.photoUrl} />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-ink">{profile.name}</h3>
+          <h2 className="truncate text-lg font-semibold text-ink">{profile.name}</h2>
           <p className="mt-0.5 text-sm text-ink-muted">{profile.headline}</p>
           <p className="mt-3 text-sm leading-relaxed text-ink/90">{profile.bio}</p>
 

@@ -64,7 +64,7 @@ export function AuthForm({ mode, submit, isLoading }: AuthFormProps) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-12">
       <div className="rounded-2xl border border-line bg-surface p-7 shadow-sm">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">{copy.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">{copy.title}</h1>
         <p className="mt-1 text-sm text-ink-muted">{copy.subtitle}</p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">

@@ -29,7 +29,7 @@ export default function Navbar() {
         className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-4 px-4"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold tracking-tight text-ink">Sadaora</span>
+          <span className="font-display text-lg font-semibold tracking-tight text-brand-strong">Sadaora</span>
           {signedIn && (
             <div className="flex items-center gap-1">
               <NavLink to="/" end className={linkClass}>
