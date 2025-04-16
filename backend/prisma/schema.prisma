@@ -34,7 +34,7 @@ model Profile {
 
   likes Like[]
 
-  /// The feed is ordered by `createdAt desc` and keyset-paged; without this
+  /// The feed is ordered by `createdAt desc` and offset-paged; without this
   /// index every page costs a full sort of the profile table.
   @@index([createdAt(sort: Desc)])
 }
