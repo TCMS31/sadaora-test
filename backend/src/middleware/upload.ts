@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import fs from 'fs';
+import { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { config } from '../config/env';
 import { HttpError } from '../lib/http-error';
@@ -38,3 +39,21 @@ export const uploadProfilePhoto = multer({
     cb(null, true);
   },
 }).single('photo');
+
+/**
+ * multer has already written the photo by the time validation or the service
+ * rejects the request, so without this a failed save leaves an unreferenced
+ * file in the publicly served uploads directory.
+ */
+export function discardUploadOnError(
+  error: unknown,
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
+  if (!req.file) {
+    next(error);
+    return;
+  }
+  fs.unlink(req.file.path, () => next(error));
+}

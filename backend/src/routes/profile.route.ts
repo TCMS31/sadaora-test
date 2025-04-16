@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { createProfileController } from '../controllers/profile.controller';
 import { asyncHandler } from '../lib/async-handler';
 import { requireAuth } from '../middleware/require-auth';
-import { uploadProfilePhoto } from '../middleware/upload';
+import { discardUploadOnError, uploadProfilePhoto } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import { ProfileService } from '../services/profile.service';
 
@@ -28,7 +28,14 @@ export function createProfileRouter(service: ProfileService): Router {
   // segment can never be swallowed by the parameter pattern.
   router.get('/feed', asyncHandler(controller.feed));
   router.get('/me', asyncHandler(controller.getMine));
-  router.post('/', uploadProfilePhoto, profileRules, validate, asyncHandler(controller.save));
+  router.post(
+    '/',
+    uploadProfilePhoto,
+    profileRules,
+    validate,
+    asyncHandler(controller.save),
+    discardUploadOnError
+  );
   router.delete('/', asyncHandler(controller.remove));
   router.post('/:id/like', asyncHandler(controller.like));
   router.delete('/:id/like', asyncHandler(controller.unlike));

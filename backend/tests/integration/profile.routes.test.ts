@@ -1,4 +1,6 @@
+import fs from 'fs';
 import request from 'supertest';
+import { config } from '../../src/config/env';
 import { buildTestApp, createProfile, registerUser, SAMPLE_PROFILE } from '../helpers/app';
 
 const { app } = buildTestApp();
@@ -46,6 +48,24 @@ describe('profile routes', () => {
 
     expect(response.body.error.details).toMatchObject({ name: expect.any(String) });
     await user.auth(request(app).get('/api/profile/me')).expect(404);
+  });
+
+  it('does not keep the uploaded photo when the save is rejected', async () => {
+    const user = await registerUser(app);
+    const before = fs.readdirSync(config.uploadDir).length;
+
+    await user
+      .auth(request(app).post('/api/profile'))
+      .field('name', '')
+      .field('headline', 'Has a photo')
+      .field('bio', 'A bio.')
+      .attach('photo', Buffer.from('89504e470d0a1a0a', 'hex'), {
+        filename: 'avatar.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
+    expect(fs.readdirSync(config.uploadDir)).toHaveLength(before);
   });
 
   it('returns the same absolute photoUrl shape from save and from read', async () => {
