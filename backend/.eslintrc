@@ -1,0 +1,35 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2022": true,
+    "jest": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "project": ["./tsconfig.json"]
+  },
+  "extends": ["airbnb-typescript/base"],
+  "plugins": ["import", "@typescript-eslint"],
+  "ignorePatterns": ["dist", "node_modules", "coverage", "uploads"],
+  "rules": {
+    "@typescript-eslint/comma-dangle": 0,
+    "@typescript-eslint/indent": 0,
+    "@typescript-eslint/lines-between-class-members": 0,
+    "implicit-arrow-linebreak": 0,
+    "function-paren-newline": 0,
+    "operator-linebreak": 0,
+    "object-curly-newline": 0,
+    "max-len": ["error", { "code": 110, "ignoreStrings": true, "ignoreTemplateLiterals": true, "ignoreComments": true }],
+    "no-restricted-syntax": 0,
+    "import/prefer-default-export": 0,
+    "import/extensions": 0,
+    "import/order": ["error", { "alphabetize": { "order": "asc", "caseInsensitive": true }, "newlines-between": "never" }]
+  },
+  "settings": {
+    "import/parsers": { "@typescript-eslint/parser": [".ts"] },
+    "import/resolver": { "typescript": { "project": "./tsconfig.json" } }
+  }
+}
