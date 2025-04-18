@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email String @unique
+
+  /// Stored as a bcrypt hash. The field is named for what it holds; the
+  /// column keeps its original name so no data migration is required.
+  passwordHash String @map("password")
+
+  profile Profile?
+  likes   Like[]
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  name      String
+  headline  String
+  bio       String
+  photoUrl  String?
+  interests String[]
+  createdAt DateTime @default(now())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  likes Like[]
+
+  /// The feed is ordered by `createdAt desc` and keyset-paged; without this
+  /// index every page costs a full sort of the profile table.
+  @@index([createdAt(sort: Desc)])
+}
+
+model Like {
+  id String @id @default(uuid())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  likedById String
+  likedBy   User    @relation(fields: [likedById], references: [id], onDelete: Cascade)
+
+  /// One like per user per profile, enforced by the database rather than by a
+  /// read-then-write check in application code that two concurrent requests
+  /// can both pass.
+  @@unique([profileId, likedById])
+  @@index([profileId])
+  @@index([likedById])
+}
