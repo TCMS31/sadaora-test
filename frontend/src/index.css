@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/*
+ * One place for the design tokens the app uses. Tailwind v4 exposes each
+ * entry here as a utility (`bg-surface`, `text-ink-muted`, ...), which keeps
+ * colour decisions out of individual components.
+ */
+@theme {
+  --color-canvas: oklch(98.4% 0.003 260);
+  --color-surface: oklch(100% 0 0);
+  --color-line: oklch(92.5% 0.005 260);
+  --color-ink: oklch(24% 0.02 265);
+  --color-ink-muted: oklch(52% 0.015 265);
+  --color-brand: oklch(53% 0.19 262);
+  --color-brand-strong: oklch(46% 0.2 262);
+  --color-brand-soft: oklch(96% 0.025 262);
+  --color-danger: oklch(55% 0.2 25);
+  --color-danger-soft: oklch(96% 0.03 25);
+  --color-heart: oklch(60% 0.21 18);
+}
+
+html {
+  background-color: var(--color-canvas);
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A single, consistent focus ring instead of the browser default in some
+   places and nothing at all in others. */
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
