@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sadaora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sadaora}
+      POSTGRES_DB: ${POSTGRES_DB:-sadaora}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sadaora} -d ${POSTGRES_DB:-sadaora}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATA_DRIVER: prisma
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sadaora}:${POSTGRES_PASSWORD:-sadaora}@db:5432/${POSTGRES_DB:-sadaora}
+      # Must be supplied; there is no production default.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env or the environment}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      UPLOAD_DIR: /app/uploads
+    # Migrations run on start so a fresh volume comes up with the schema in
+    # place; `migrate deploy` only applies committed migrations, never edits.
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+    ports:
+      - "${API_PORT:-3001}:3001"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads:
